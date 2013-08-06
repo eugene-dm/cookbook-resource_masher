@@ -5,9 +5,9 @@ values, including default values, and with the added functionality of a Mash wra
 
 There are no sepcial requirements, it extends all resources generically.
 
-## Overview
+# Overview
 
-### Limitations of Chef default functionality
+## Limitations of Chef default functionality
 
 By default Chef provides a `.to_hash` method on Resources, which exports a Hash of its attributes; but
 its implimentation is counter-intuitive.
@@ -15,7 +15,7 @@ its implimentation is counter-intuitive.
 If an LWRP supplies default values, and they are not overwritten, those keys/values are not included in Chef's
 `.to_hash` export. By design the Hash behaves more like a serialization.
 
-## Usage
+# Usage
 
 This cookbook adds the methods `.attribute_mash` and `.attribute_mash_formatted` to Chef resources.
 
@@ -24,7 +24,7 @@ The following example illustrates its usage in an LWRP provider. **Please note:*
   * You do not need to be within a provider to invoke these functions.
   * Only your cookbook needs to depend on the **resource_masher**, target resources require no modifications.
 
-### LWRP Example
+## LWRP Example
 
 Given the following sample LWRP resource describing a plugin:
 
@@ -109,7 +109,7 @@ Let's look at how the **resource_masher** helps in the provider:
 
     end
 
-### Formatting
+## Formatting
 
 The `.attribute_mash_formatted` method replaces any tokens in String values with matching values defined on the
 resource.
@@ -131,12 +131,34 @@ any matching attributes on the resource itself will override the provided data.
     extra_data = { :alpha => 'AAA', :beta => 'BBB' }
     export = new_resource.attribute_mash_formatted(extra_data)
 
-## Bugs / Docs / Updates
+## Validation
 
-### Please see: [code.binbab.org](http://code.binbab.org)
+The ResourceMash returned has an added `.validate` method which incorporates the standard Chef validation tools
+for ease of use. Additionally the values returned from the validation replace any existing values in the Mash
+(if different) ... permitting the use of the :default validation option as well.
+
+An ideal use case is when generic super-class resources are distilled into more specific sub-classes. Such as how
+the stock 'remote_file' resource is an extension of the 'file' resource. The ResourceMash validation method can be a
+quick way to transform/validate the resource data as needed.
+
+For more information on the validation syntax, [see the Chef docs linked here](http://docs.opscode.com/lwrp_custom_resource.html).
+
+Example usage:
+
+    export = new_resource.attribute_mash
+    export.validate({
+      :alpha   => { :equal_to => 'AAA' },
+      :beta    => { :kind_of => String },
+      :charlie => { :default => 'CCC' }
+    })
 
 
-## Versioning
+# Bugs / Docs / Updates
+
+Please see: [code.binbab.org](http://code.binbab.org)
+
+
+# Versioning
 
 The cookbook uses semantic versioning. Releases will be numbered in the following format:
 
@@ -150,7 +172,7 @@ And constructed with the following guidelines:
 
 For more information on SemVer, visit http://semver.org/.
 
-## Authors and License
+# Authors and License
 
   * Author:: BinaryBabel OSS (<projects@binarybabel.org>)
   * Copyright:: 2013 `sha1(OWNER) = df334a7237f10846a0ca302bd323e35ee1463931`

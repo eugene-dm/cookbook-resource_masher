@@ -25,9 +25,14 @@
 # limitations under the License.
 #
 
+require 'chef/mash'
+require 'chef/mixin/params_validate'
+
 module ResourceMasher
 
-  class Mash < ::Mash
+  class ResourceMash < ::Mash
+    include ::Chef::Mixin::ParamsValidate
+
     # Chef's Mash doesn't natively allow for object (dot) notation attribute access.
     def method_missing(method, *args, &block)
       if (match = method.to_s.match(/(.*)=$/)) && args.size == 1
@@ -44,12 +49,20 @@ module ResourceMasher
       end
     end
 
+    # Helper function to quickly validate changes to resource mash.
+    def validate(map)
+      data = super(symbolize_keys, map)
+      data.each do |k,v|
+        self[k.to_sym] = v
+      end
+    end
+
     def self.from_hash(hash)
-      mash = Mash.new(hash)
+      mash = ResourceMash.new(hash)
       mash.default = hash.default
       mash
     end
-  end  # /Mash
+  end  # /ResourceMash
 
   module ChefResource
     def attribute_mash(source=nil)
@@ -65,16 +78,20 @@ module ResourceMasher
         end
       end
 
-      Mash.from_hash(hash)
+      ResourceMash.from_hash(hash)
     end
 
     def attribute_mash_formatted(default_data=nil, source=nil)
       source ||= self
 
-      data = (default_data && default_data.is_a?(Hash) or Hash.new)
+      if default_data && (default_data.is_a?(Hash) || default_data.is_a?(Mash))
+        data = default_data
+      else
+        data = Hash.new
+      end
       data = Mash.from_hash(data) unless data.is_a?(Mash)
       data.merge!(attribute_mash(source))
-      data = data.symbolize_keys  # becomes Hash
+      data = data.symbolize_keys  # becomes Hash again
 
       max_iterations = 3
 
@@ -91,13 +108,13 @@ module ResourceMasher
         end  # /for
       end  # /each_value
 
-      Mash.from_hash(data)
+      ResourceMash.from_hash(data)
     end
   end  # /Resource
 
 end  # /ResourceMasher
 
 # Inject attribute_mash methods into Chef::Resource class.
-unless ::Chef::Resource.public_method_defined?(:attribute_hash)
+unless ::Chef::Resource.public_method_defined?(:attribute_mash)
   ::Chef::Resource.send(:include, ResourceMasher::ChefResource)
 end
