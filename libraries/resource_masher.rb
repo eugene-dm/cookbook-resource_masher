@@ -69,13 +69,9 @@ module ResourceMasher
       source ||= self
       hash = Hash.new
 
-      pattern = Regexp.new('^_set_or_return_(.+)$')
-
       source.public_methods(false).each do |method|
-        pattern.match(method) do |m|
-          attribute = m[1].to_sym
-          hash[attribute] = send(attribute)
-        end
+        attribute = method.to_sym
+        hash[attribute] = send(attribute)
       end
 
       ResourceMash.from_hash(hash)
@@ -118,3 +114,4 @@ end  # /ResourceMasher
 unless ::Chef::Resource.public_method_defined?(:attribute_mash)
   ::Chef::Resource.send(:include, ResourceMasher::ChefResource)
 end
+
